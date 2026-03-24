@@ -1,0 +1,181 @@
+\documentclass{article}
+\usepackage[UTF8]{ctex}
+\usepackage{hyperref}
+\usepackage{bm}
+\usepackage{amsmath, amssymb}
+\usepackage{silence}
+\WarningFilter{latexfont}{Font shape}			% 屏蔽所有以 "Font shape" 开头的 LaTeX 字体警告
+\WarningFilter{latexfont}{Size substitutions}	% 屏蔽所有以 "Size substitutions" 开头的 LaTeX 字体警告
+
+\numberwithin{equation}{section}
+
+\newcounter{problem}
+
+\begin{document}
+
+\tableofcontents
+\newpage
+
+\section{从一个简单模型与问题开始}
+这篇文档里提到的“无损凸化”指的是将某个非凸的约束通过构造凸包的方式进行松弛，得到一个凸的约束，在某些优化问题中，松弛后的问题最优解仍然满足原非凸问题约束，故可以通过这种方式将非凸问题转化为凸问题，又不会影响问题最优解，故曰“无损凸化”。
+
+放到某些教材里面，这时候该讲凸优化跟无损凸化在学术界的发展历史了。但我不想聊这些，直接上一个简单的问题，大家感受一下过程：
+
+考虑以下这样一个简单的非线性系统：
+\begin{equation}
+{\bm{\dot x}} = \left[ {\begin{array}{*{20}{c}}
+{\dot x}\\
+{\dot y}\\
+{\dot \theta }
+\end{array}} \right] = {\bm{f}}\left( {{\bm{x}},\bm{u}} \right) = \left[ {\begin{array}{*{20}{c}}
+{V\cos \theta }\\
+{V\sin \theta }\\
+a
+\end{array}} \right]
+\label{eq:p1_dyn}
+\end{equation}
+其中，$\bm{x} = \left[x; y; \theta\right] \in \mathcal{R}^3$ 表示系统的状态向量，$\bm{u} = \left[a; \sigma\right] \in \mathcal{R}^2$ 表示系统控制向量，$V > 0$ 是一个常量。
+
+有经验的人都能看出来这是个什么系统，不过这篇文档只讨论数学技巧，这里就不解释这个系统的物理含义了。
+
+等等！不对！状态方程中的 $\sigma$ 去哪里了？在这里我用以下这样一个约束去描述 $\sigma$ 与这个系统的关系：
+\begin{equation}
+{a^2} = \sigma
+\label{eq:p1_nonCvx}
+\end{equation}
+
+有人要说了：定义这个干什么？为了回答这个疑问，我下面构造一下优化问题的目标函数，来正式构建 $\sigma$ 和这个问题的关系：
+\begin{equation}
+J = \int_{{t_0}}^{{t_{\rm{f}}}} {\sigma {\rm{d}}t}
+\label{pq_obj}
+\end{equation}
+其中，$t_{\rm{f}}$ 为固定值。将上面的方程组织为优化问题：
+
+$\mathcal{P}\thesection$:
+\[\begin{array}{*{20}{c}}
+{\mathop {\min }\limits_{{\bm{x}}\left( t \right),{\bm{u}}\left( t \right)} }&(\ref{pq_obj})\\
+{}&{{\text{dynamic constraint: }}(\ref{eq:p1_dyn})}\\
+{}&{{\text{non-convex constraint: }}(\ref{eq:p1_nonCvx})}
+\end{array}\]
+
+有人指出：既然涉及到 $\sigma$ 的只有一个目标函数 (\ref{pq_obj}) 和约束条件 (\ref{eq:p1_nonCvx})，仔细想想，最优解不就是 $\bm{u}^*\left(t\right) = {\bf{0}}$ 吗？哪里用得上无损凸化这么高级的技巧？莫急，这个问题只是一个用于了解无损凸化思路的开胃小菜。我们基于这样一个简单的问题，看看在 SCP 框架下的无损凸化思路。
+
+SCP 框架下，为了将问题转化为能放到求解器里直接求解的凸问题，会对原始问题中的非凸约束进行一些处理。针对动力学方程 (\ref{eq:p1_dyn}) 这种非线性等式约束，一般的处理方案是在每次迭代时的参考轨迹附近进行线性化：
+\begin{equation}
+{\bm{\dot x}} = {\bm{A}}\left( {{{\bm{x}}^{\rm{r}}}} \right){\bm{x}} + {\bm{Bu}} + {\bm{c}}\left( {{{\bm{x}}^{\rm{r}}}} \right)
+\label{eq:p1_linDyn}
+\end{equation}
+我假定阅读这篇文档的人已经相当了解这一步的操作方法了。上式中：
+\begin{equation}
+\label{p1_1_A}
+{\bm{A}}\left( {\bm{x}} \right) = \frac{{\partial {\bm{f}}\left( {{\bm{x}},{\bm{u}}} \right)}}{{\partial {\bm{x}}}} = \left[ {\begin{array}{*{20}{c}}
+0&0&{ - V\sin \theta }\\
+0&0&{V\cos \theta }\\
+0&0&0
+\end{array}} \right] = \left[ {\begin{array}{*{20}{c}}
+{{{\bf{0}}_{2 \times 2}}}&{{{\bm{A}}_{\left[ {1:2,3} \right]}}}\\
+{{{\bf{0}}_2}}&0
+\end{array}} \right]
+\end{equation}
+
+\begin{equation}
+\label{p1_1_B}
+{\bm{B}} = \left[ {\begin{array}{*{20}{c}}
+0&0\\
+0&0\\
+1&0
+\end{array}} \right]
+\end{equation}
+这样 (\ref{eq:p1_dyn}) 这样的非凸约束就变成了 (\ref{eq:p1_linDyn}) 这样的线性时变系统状态方程，即线性等式约束。那么 (\ref{eq:p1_nonCvx}) 呢？我们直接构造一个这个约束的凸包：
+\begin{equation}
+{a^2} \le \sigma
+\label{eq:p1_cvxRelax}
+\end{equation}
+有人可能会说：这不是胡闹吗？怎么还把可行域扩大了？不过我接下来要说，即使把约束写成这个样子，在最优解处仍然有 $a^{*2} = \sigma^*$ 成立。仔细想来，仍然有 $\bm{u}^* = {\bf{0}}$。
+
+那么，要怎样证明这是成立的呢？首先，我们先汇总一下问题：
+
+\setcounter{problem}{1}
+
+$\mathcal{SP}\thesection{\rm{-}}\arabic{problem}$:
+\[\begin{array}{*{20}{c}}
+{\mathop {\min }\limits_{{\bm{x}}\left( t \right),{\bm{u}}\left( t \right)} }&(\ref{pq_obj})\\
+{}&{{\text{dynamic constraint: }}(\ref{eq:p1_linDyn})}\\
+{}&{{\text{convex relaxation constraint: }}(\ref{eq:p1_cvxRelax})}
+\end{array}\]
+这个问题对应的增广拉格朗日函数（笔者借用一下数值优化那里的概念）为：
+\[\bar J = \int_{{t_0}}^{{t_{\rm{f}}}} {\left( {{\lambda _0}\sigma  + {{\bm{\lambda }}^{\rm{T}}}\left( {{\bm{\dot x}} - {\bm{Ax}} - {\bm{Bu}} - {\bm{c}}} \right) + \mu \left( {{a^2} - \sigma } \right)} \right){\rm{d}}t} \]
+其中 $\lambda_0 = {\rm{const}} \ge 0$，是目标函数对应的乘子项；$\bm{\lambda}$ 就是最优控制领域大名鼎鼎的协态向量，这里可以理解是状态方程等式约束对应的拉格朗日乘子向量；$\mu \ge 0$，是凸松弛约束对应的拉格朗日乘子项，作为不等式约束的乘子项，与这个不等式约束之间存在一个互补松弛关系：
+\[\mu \left( {{a^2} - \sigma } \right) = 0\]
+这样当最优解没在约束边界上时，$\mu = 0$，而当最优解正好在这个约束的边界上时，就可能有 $\mu > 0$。
+
+另外，为了防止利用这个条件整出某些十分离谱的解，特规定非平凡条件：
+\begin{equation}
+\label{p1_1_nontrivial}
+\nexists \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right) \subset \left[ {{t_0},{t_{\rm{f}}}} \right],\forall t \in \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right),\left[ {{\lambda _0};{\bm{\lambda }}\left( t \right);\mu \left( t \right)} \right] = {\bf{0}}
+\end{equation}
+
+上面定义的拉格朗日函数实在是太长了。我们先定义个哈密顿函数：
+\[H = {\lambda _0}\sigma  - {{\bm{\lambda }}^{\rm{T}}}\left( {{\bm{Ax}} + {\bm{Bu}} + {\bm{c}}} \right) + \mu \left( {{a^2} - \sigma } \right)\]
+这样就可以把上面那个增广拉格朗日函数写成：
+\[\bar J = \int_{{t_0}}^{{t_{\rm{f}}}} {\left( {H + {{\bm{\lambda }}^{\rm{T}}}{\bm{\dot x}}} \right){\rm{d}}t} \]
+有人可能看过其他一些有关最优控制的资料，并指出我的哈密顿函数某几项的正负跟 ta 看过的不一样。这个定义本来就是不同学派（经典之苏/俄、欧美各玩各的）都有一些区别的，理解含义之后，哪个用着习惯就用哪个，自洽就行。
+
+接下来，对增广拉格朗日函数求变分：
+\[\begin{aligned}
+\delta \bar J &= \int_{{t_0}}^{{t_{\rm{f}}}} {\left( {\delta H + {{\bm{\lambda }}^{\rm{T}}}\delta {\bm{\dot x}}} \right){\rm{d}}t} \\
+ &= \int_{{t_0}}^{{t_{\rm{f}}}} {\left( {\delta H{\rm{d}}t + {{\bm{\lambda }}^{\rm{T}}}{\rm{d}}\delta {\bm{x}}\left( t \right)} \right)} \\
+ &= {{\bm{\lambda }}^{\rm{T}}}\left( {{t_{\rm{f}}}} \right)\delta {\bm{x}}\left( {{t_{\rm{f}}}} \right) + \int_{{t_0}}^{{t_{\rm{f}}}} {\left( {\delta H - {{{\bm{\dot \lambda }}}^{\rm{T}}}\delta {\bm{x}}} \right){\rm{d}}t} 
+\end{aligned}\]
+一般的问题里面初始状态都是确定的，所以相应的变分项必然为零，上式就没写。$\delta H$ 的表达式为：
+\[\delta H = \frac{{\partial H}}{{\partial {\bm{x}}}}\delta {\bm{x}} + \frac{{\partial H}}{{\partial {\bm{u}}}}\delta {\bm{u}}\]
+其中
+\[\begin{aligned}
+\frac{{\partial H}}{{\partial {\bm{x}}}} &=  - {{\bm{\lambda }}^{\rm{T}}}{\bm{A}}\\
+\frac{{\partial H}}{{\partial {\bm{u}}}} &=  - {{\bm{\lambda }}^{\rm{T}}}{\bm{B}} + \left[ {\begin{array}{*{20}{c}}
+{2\mu a}&{{\lambda _0} - \mu }
+\end{array}} \right]
+\end{aligned}\]
+最优解 $\left\{\bm{u}^*; \bm{x}^*\right\}$ 应满足对应拉格朗日函数变分为零，即：
+\[\begin{aligned}
+{\bm{\lambda }}\left( {{t_{\rm{f}}}} \right) &= {\bf{0}}\\
+{\bm{\dot \lambda }} &= \frac{{\partial H}}{{\partial {{\bm{x}}^{\rm{T}}}}}\\
+\frac{{\partial H}}{{\partial {\bm{u}}}} &= {\bf{0}}
+\end{aligned}\]
+
+在咱们的问题中，由式 (\ref{p1_1_A})(\ref{p1_1_B}) 给出的 $\bm{A}$ 和 $\bm{B}$ 具有某种稀疏性，似乎有很多地方都是零。这样，上面得到的这些等式就可以写成：
+\begin{equation}
+\label{p1_1_lambdaf_eq_0}
+{\bm{\lambda }}\left( {{t_{\rm{f}}}} \right) = {\bf{0}}
+\end{equation}
+
+\begin{equation}
+\label{p1_1_dlambda1_2_eq_0}
+{{{\bm{\dot \lambda }}}_{\left[ {1:2} \right]}} = {\bf{0}}
+\end{equation}
+
+\[
+{{{\bm{\dot \lambda }}}_{\left[ 3 \right]}} =  - {\bm{A}}_{\left[ {1:2,3} \right]}^{\rm{T}}{{\bm{\lambda }}_{\left[ {1:2} \right]}}
+\]
+
+\begin{equation}
+\label{p1_1_dHdu_eq_0}
+\left[ {\begin{array}{*{20}{c}}
+{2\mu {a^*} - {{\bm{\lambda }}_{\left[ 3 \right]}}}&{{\lambda _0} - \mu }
+\end{array}} \right] = {\bf{0}}
+\end{equation}
+
+接下来我们可以考虑说明为什么 $a^{*2} = \sigma^*$ 了。假设 $\exists \left(t_{\rm{L}}, t_{\rm{R}}\right) \subset \left[ {{t_0},{t_{\rm{f}}}} \right]$，$\forall t_{\rm{s}} \in \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right), a^{*2}\left(t_{\rm{s}}\right) < \sigma^*\left(t_{\rm{s}}\right)$，那么根据互补松弛条件，有：
+\[\mu\left(t_{\rm{s}}\right) = 0\]
+上式代入式 (\ref{p1_1_dHdu_eq_0})，有：
+\[\begin{aligned}
+{\lambda _0} &= 0\\
+{{\bm{\lambda }}_{\left[ 3 \right]}}\left( {{t_{\rm{s}}}} \right) &= 0
+\end{aligned}\]
+联立式 (\ref{p1_1_lambdaf_eq_0})(\ref{p1_1_dlambda1_2_eq_0})，很容易知道：
+\[\forall t \in \left[ {{t_0},{t_{\rm{f}}}} \right],{{\bm{\lambda }}_{\left[ {1:2} \right]}}\left( t \right) = {\bf{0}}\]
+综上：
+\[\left[ {{\lambda _0};{\bm{\lambda }}\left( {{t_{\rm{s}}}} \right);\mu \left( {{t_{\rm{s}}}} \right)} \right] = {\bf{0}}\]
+这与非平凡条件 (\ref{p1_1_nontrivial}) 矛盾。这意味着此前的假设是错的，$\nexists \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right) \subset \left[ {{t_0},{t_{\rm{f}}}} \right],\forall t_{\rm{s}} \in \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right),a^{*2}\left(t_{\rm{s}}\right) < \sigma^*\left(t_{\rm{s}}\right)$。即我们构造凸包来将非凸等式约束转换为凸的不等式约束的做法不会改变问题的最优解。我们转换得到的问题是凸问题，性质比原先的非凸问题好太多了，后面离散化一下就可以放到常用求解器（CVX、MOSEK 等）里直接求解，相当方便。
+
+\end{document}
