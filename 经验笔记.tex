@@ -130,18 +130,24 @@ $\mathcal{SP}\thesection{\rm{-}}\arabic{problem}$:
 一般的问题里面初始状态都是确定的，所以相应的变分项必然为零，上式就没写。$\delta H$ 的表达式为：
 \[\delta H = \frac{{\partial H}}{{\partial {\bm{x}}}}\delta {\bm{x}} + \frac{{\partial H}}{{\partial {\bm{u}}}}\delta {\bm{u}}\]
 其中
-\[\begin{aligned}
+\begin{equation}
+\label{p1_dH_exprs}
+\begin{aligned}
 \frac{{\partial H}}{{\partial {\bm{x}}}} &=  - {{\bm{\lambda }}^{\rm{T}}}{\bm{A}}\\
 \frac{{\partial H}}{{\partial {\bm{u}}}} &=  - {{\bm{\lambda }}^{\rm{T}}}{\bm{B}} + \left[ {\begin{array}{*{20}{c}}
 {2\mu a}&{{\lambda _0} - \mu }
 \end{array}} \right]
-\end{aligned}\]
+\end{aligned}
+\end{equation}
 最优解 $\left\{\bm{u}^*; \bm{x}^*\right\}$ 应满足对应拉格朗日函数变分为零，即：
-\[\begin{aligned}
+\begin{equation}
+\label{p1_conditions}
+\begin{aligned}
 {\bm{\lambda }}\left( {{t_{\rm{f}}}} \right) &= {\bf{0}}\\
 {\bm{\dot \lambda }} &= \frac{{\partial H}}{{\partial {{\bm{x}}^{\rm{T}}}}}\\
 \frac{{\partial H}}{{\partial {\bm{u}}}} &= {\bf{0}}
-\end{aligned}\]
+\end{aligned}
+\end{equation}
 
 在咱们的问题中，由式 (\ref{p1_1_A})(\ref{p1_1_B}) 给出的 $\bm{A}$ 和 $\bm{B}$ 具有某种稀疏性，似乎有很多地方都是零。这样，上面得到的这些等式就可以写成：
 \begin{equation}
@@ -177,5 +183,67 @@ $\mathcal{SP}\thesection{\rm{-}}\arabic{problem}$:
 综上：
 \[\left[ {{\lambda _0};{\bm{\lambda }}\left( {{t_{\rm{s}}}} \right);\mu \left( {{t_{\rm{s}}}} \right)} \right] = {\bf{0}}\]
 这与非平凡条件 (\ref{p1_1_nontrivial}) 矛盾。这意味着此前的假设是错的，$\nexists \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right) \subset \left[ {{t_0},{t_{\rm{f}}}} \right],\forall t_{\rm{s}} \in \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right),a^{*2}\left(t_{\rm{s}}\right) < \sigma^*\left(t_{\rm{s}}\right)$。即我们构造凸包来将非凸等式约束转换为凸的不等式约束的做法不会改变问题的最优解。我们转换得到的问题是凸问题，性质比原先的非凸问题好太多了，后面离散化一下就可以放到常用求解器（CVX、MOSEK 等）里直接求解，相当方便。
+
+\section{难度提升：平方减速}
+上一节的问题中，我们新定义的 $\sigma$ 和动力学没有任何关系，它只是在目标函数以及一个约束条件里出现。当我们试图最小化 $\sigma$ 时，$\sigma$ 自然而然地会被最小化到可行域的边界上。
+
+现在我们稍微增加一些难度。$V$ 不再是一个常量，而是一个会受 $\sigma$ 影响状态变量。非线性系统状态方程变为：
+\[{\bm{\dot x}} = \left[ {\begin{array}{*{20}{c}}
+{\dot x}\\
+{\dot y}\\
+{\dot V}\\
+{\dot \theta }
+\end{array}} \right] = {\bm{f}}\left( {{\bm{x}},{\bm{u}}} \right) = \left[ {\begin{array}{*{20}{c}}
+{V\cos \theta }\\
+{V\sin \theta }\\
+{ - K\sigma }\\
+a
+\end{array}} \right]\]
+其中，$K = {\rm{const}} > 0$。我们仍然采用上面介绍过的逐次迭代与线性化的思路处理这个系统，也就是在每次迭代时将其化为式 (\ref{eq:p1_linDyn}) 的形式。系统修改后，具体矩阵表达式也发生了变化：
+\[{\bm{A}}\left( {\bm{x}} \right) = \left[ {\begin{array}{*{20}{c}}
+{{{\bf{0}}_{2 \times 2}}}&{{{\bm{A}}_{\left[ {1:2,3:4} \right]}}}\\
+{{{\bf{0}}_{2 \times 2}}}&{{{\bf{0}}_{2 \times 2}}}
+\end{array}} \right]\]
+
+\[{\bm{B}} = \left[ {\begin{array}{*{20}{c}}
+{{{\bf{0}}_2}}&{{{\bf{0}}_2}}\\
+0&{ - K}\\
+1&0
+\end{array}} \right]\]
+虽然动力学系统的表达式变了，但这里的处理思路和上一节一致，还是构造凸包来将非凸等式约束转换为凸的不等式约束，然后证明最优解在凸包边界上，说明凸化操作不会改变问题的最优解。我们仍然可以沿用上一节的部分表达式，比如 (\ref{p1_dH_exprs})(\ref{p1_conditions})。由于系统表达式发生了变化，这些表达式简化得到的结果会有不同：
+\begin{equation}
+\label{p2_lambdaf_eq_0}
+{\bm{\lambda }}\left( {{t_{\rm{f}}}} \right) = {\bf{0}}
+\end{equation}
+
+\begin{equation}
+\label{p2_dlambda1_2_eq_0}
+{{{\bm{\dot \lambda }}}_{\left[ {1:2} \right]}} = {\bf{0}}
+\end{equation}
+
+\begin{equation}
+\label{p2_dlambda3_4}
+{{{\bm{\dot \lambda }}}_{\left[ {3:4} \right]}} =  - {\bm{A}}_{\left[ {1:2,3:4} \right]}^{\rm{T}}{{\bm{\lambda }}_{\left[ {1:2} \right]}}
+\end{equation}
+
+\begin{equation}
+\label{p2_dHdu_eq_0}
+- {\bm{B}}_{\left[ {3:4, \bullet } \right]}^{\rm{T}}{{\bm{\lambda }}_{\left[ {3:4} \right]}} + \left[ {\begin{array}{*{20}{c}}
+{2\mu a}\\
+{{\lambda _0} - \mu }
+\end{array}} \right] = {\bf{0}}
+\end{equation}
+根据式 (\ref{p2_lambdaf_eq_0})(\ref{p2_dlambda1_2_eq_0})，显然有：
+\[\forall t \in \left[ {{t_0},{t_{\rm{f}}}} \right],{{\bm{\lambda }}_{\left[ {1:2} \right]}}\left( t \right) = {\bf{0}}\]
+将这个结论与式 (\ref{p2_dlambda3_4}) 联立，有：
+\[{{{\bm{\dot \lambda }}}_{\left[ {3:4} \right]}} = {\bf{0}}\]
+将这个结论与式 (\ref{p2_lambdaf_eq_0}) 联立，有：
+\[\forall t \in \left[ {{t_0},{t_{\rm{f}}}} \right],{{\bm{\lambda }}_{\left[ {3:4} \right]}}\left( t \right) = {\bf{0}}\]
+将上式代入式 (\ref{p2_dHdu_eq_0})，有：
+\[\left[ {\begin{array}{*{20}{c}}
+{2\mu a}\\
+{{\lambda _0} - \mu }
+\end{array}} \right] = {\bf{0}}\]
+我们采用和上一节一样的反证法思路来说明 $\mu$ 不恒为零，即凸化无损。假如 $\mu \equiv 0$，由上式容易得知 $\lambda_0 = 0$。又由于刚刚已经推出 $\bm{\lambda} \equiv {\bf{0}}$，这样我们就推出了一个违背非平凡条件的结论。故 $\mu$ 不恒为零，即凸化无损。
 
 \end{document}
