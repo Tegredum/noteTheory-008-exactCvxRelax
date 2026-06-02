@@ -205,11 +205,14 @@ a
 {{{\bf{0}}_{2 \times 2}}}&{{{\bf{0}}_{2 \times 2}}}
 \end{array}} \right]\]
 
-\[{\bm{B}} = \left[ {\begin{array}{*{20}{c}}
+\begin{equation}
+\label{p2_B}
+{\bm{B}} = \left[ {\begin{array}{*{20}{c}}
 {{{\bf{0}}_2}}&{{{\bf{0}}_2}}\\
 0&{ - K}\\
 1&0
-\end{array}} \right]\]
+\end{array}} \right]
+\end{equation}
 虽然动力学系统的表达式变了，但这里的处理思路和上一节一致，还是构造凸包来将非凸等式约束转换为凸的不等式约束，然后证明最优解在凸包边界上，说明凸化操作不会改变问题的最优解。我们仍然可以沿用上一节的部分表达式，比如 (\ref{p1_dH_exprs})(\ref{p1_conditions})。由于系统表达式发生了变化，这些表达式简化得到的结果会有不同：
 \begin{equation}
 \label{p2_lambdaf_eq_0}
@@ -234,7 +237,10 @@ a
 \end{array}} \right] = {\bf{0}}
 \end{equation}
 根据式 (\ref{p2_lambdaf_eq_0})(\ref{p2_dlambda1_2_eq_0})，显然有：
-\[\forall t \in \left[ {{t_0},{t_{\rm{f}}}} \right],{{\bm{\lambda }}_{\left[ {1:2} \right]}}\left( t \right) = {\bf{0}}\]
+\begin{equation}
+\label{p2_lambda1_2_eq_0}
+\forall t \in \left[ {{t_0},{t_{\rm{f}}}} \right],{{\bm{\lambda }}_{\left[ {1:2} \right]}}\left( t \right) = {\bf{0}}
+\end{equation}
 将这个结论与式 (\ref{p2_dlambda3_4}) 联立，有：
 \[{{{\bm{\dot \lambda }}}_{\left[ {3:4} \right]}} = {\bf{0}}\]
 将这个结论与式 (\ref{p2_lambdaf_eq_0}) 联立，有：
@@ -245,5 +251,36 @@ a
 {{\lambda _0} - \mu }
 \end{array}} \right] = {\bf{0}}\]
 我们采用和上一节一样的反证法思路来说明 $\mu$ 不恒为零，即凸化无损。假如 $\mu \equiv 0$，由上式容易得知 $\lambda_0 = 0$。又由于刚刚已经推出 $\bm{\lambda} \equiv {\bf{0}}$，这样我们就推出了一个违背非平凡条件的结论。故 $\mu$ 不恒为零，即凸化无损。
+
+\section{难度提升：终端位置固定}
+上一节的问题中，终端时刻的状态向量是自由的，这会使得终端时刻的协态向量为零向量，进而推出一些比较漂亮的表达式。
+
+这一节，我们在上一节问题的基础上，增加一个终端约束：
+\[\left[ {\begin{array}{*{20}{c}}
+{x\left( {{t_{\rm{f}}}} \right)}\\
+{y\left( {{t_{\rm{f}}}} \right)}
+\end{array}} \right] = \left[ {\begin{array}{*{20}{c}}
+{{x_{\rm{f}}}}\\
+{{y_{\rm{f}}}}
+\end{array}} \right]\]
+
+上节得到的式 (\ref{p2_dlambda1_2_eq_0})(\ref{p2_dlambda3_4})(\ref{p2_dHdu_eq_0}) 仍然成立，只是协态向量终端条件发生了变化：
+\[{{\bm{\lambda }}_{\left[ {3:4} \right]}}\left( {{t_{\rm{f}}}} \right) = {\bf{0}}\]
+
+我们采用和上一节一样的反证法思路来说明 $\mu$ 不恒为零，即凸化无损。
+假设 $\exists \left(t_{\rm{L}}, t_{\rm{R}}\right) \subset \left[ {{t_0},{t_{\rm{f}}}} \right]$，$\forall t_{\rm{s}} \in \left( {{t_{\rm{L}}},{t_{\rm{R}}}} \right), a^{*2}\left(t_{\rm{s}}\right) < \sigma^*\left(t_{\rm{s}}\right)$，那么根据互补松弛条件，有：
+\[\mu\left(t_{\rm{s}}\right) = 0\]
+将上式代入式 (\ref{p2_dHdu_eq_0})，结合动力学方程中 $\bm{B}$ 表达式 (\ref{p2_B}) 有：
+\[\begin{aligned}
+{{\bm{\lambda }}_{\left[ 4 \right]}}\left( {{t_{\rm{s}}}} \right) &= 0\\
+K{{\bm{\lambda }}_{\left[ 3 \right]}}\left( {{t_{\rm{s}}}} \right) + {\lambda _0} &= 0
+\end{aligned}\]
+对上式求导得：
+\[{{{\bm{\dot \lambda }}}_{\left[ {3:4} \right]}}\left( {{t_{\rm{s}}}} \right) = {\bf{0}}\]
+将上式与式 (\ref{p2_dlambda3_4}) 联立，有：
+\[{{\bm{\lambda }}_{\left[ {1:2} \right]}}\left( {{t_{\rm{s}}}} \right) = {\bf{0}}\]
+又因为式 (\ref{p2_dlambda1_2_eq_0})，有：
+\[\forall t \in \left[ {{t_0},{t_{\rm{f}}}} \right],{{\bm{\lambda }}_{\left[ {1:2} \right]}}\left( t \right) = {\bf{0}}\]
+此后的分析过程与上一节式 (\ref{p2_lambda1_2_eq_0}) 之后的过程相同，可推出矛盾，知假设不成立。故 $\mu$ 不恒为零，即凸化无损。
 
 \end{document}
